@@ -84,7 +84,14 @@ export class PropertyList extends React.Component<PropertyListProps> {
 							);
 
 						default:
-							return <div key={id}>Unknown type: {type}</div>;
+							return (
+								<div key={id}>
+									{`
+										${name} has an unknown property type:
+										${type}
+									`}
+								</div>
+							);
 					}
 				})}
 			</div>
