@@ -33,23 +33,17 @@ function createProperty(
 	symbol: ts.Symbol,
 	typechecker: ts.TypeChecker
 ): Property | undefined {
-	const declaration = findTypeDeclaration(symbol) as ts.PropertyDeclaration;
+	const declaration = findTypeDeclaration(symbol) as ts.Declaration;
 
 	if (!declaration) {
 		return;
 	}
 
-	if (!declaration.type) {
-		return;
+	let type = typechecker.getTypeAtLocation(declaration);
+
+	if (type.flags & ts.TypeFlags.Union) {
+		type = (type as ts.UnionType).types[0];
 	}
-
-	let typeNode = declaration.type;
-
-	if (ts.isUnionTypeNode(declaration.type)) {
-		typeNode = declaration.type.types[0];
-	}
-
-	const type = typechecker.getTypeFromTypeNode(typeNode);
 
 	const optional = (symbol.flags & ts.SymbolFlags.Optional) === ts.SymbolFlags.Optional;
 
@@ -65,46 +59,62 @@ function createProperty(
 		return property;
 	}
 
-	if ((type.flags & ts.TypeFlags.Boolean) === ts.TypeFlags.Boolean) {
+	if ((type.flags & ts.TypeFlags.BooleanLiteral) === ts.TypeFlags.BooleanLiteral) {
 		const property = new BooleanProperty(name);
 		property.setRequired(!optional);
 		return property;
 	}
 
-	if (ts.isTypeReferenceNode(typeNode)) {
-		if (!type.symbol) {
+	if (type.flags & ts.TypeFlags.EnumLiteral) {
+		if (!(type.symbol && type.symbol.flags & ts.SymbolFlags.EnumMember)) {
 			return;
 		}
 
-		const typeReferenceDeclaration = findTypeDeclaration(type.symbol);
+		const enumMemberDeclaration = findTypeDeclaration(type.symbol);
 
-		if (!typeReferenceDeclaration) {
+		if (!(enumMemberDeclaration && enumMemberDeclaration.parent)) {
 			return;
 		}
 
-		if (ts.isEnumDeclaration(typeReferenceDeclaration)) {
-			const property = new EnumProperty(name);
-			property.setOptions(getEnumTypeOptions(typeReferenceDeclaration));
+		if (!ts.isEnumDeclaration(enumMemberDeclaration.parent)) {
+			return;
+		}
+
+		const property = new EnumProperty(name);
+		property.setRequired(!optional);
+		property.setOptions(getEnumTypeOptions(enumMemberDeclaration.parent));
+		return property;
+	}
+
+	if (typechecker.isArrayLikeType(type)) {
+		const arrayType: ts.GenericType = type as ts.GenericType;
+
+		if (!arrayType.typeArguments) {
+			return;
+		}
+
+		const itemType = arrayType.typeArguments[0];
+
+		if ((itemType.flags & ts.TypeFlags.String) === ts.TypeFlags.String) {
+			const property = new StringArrayProperty(name);
 			property.setRequired(!optional);
 			return property;
 		}
 
-		if (ts.isInterfaceDeclaration(typeReferenceDeclaration)) {
-			const property = new ObjectProperty(name);
-			property.setProperties(getProperties(type, typechecker));
+		if ((itemType.flags & ts.TypeFlags.Number) === ts.TypeFlags.Number) {
+			const property = new NumberArrayProperty(name);
+			property.setRequired(!optional);
 			return property;
 		}
 	}
 
-	if (ts.isArrayTypeNode(typeNode)) {
-		const arrayTypeNode = typeNode;
+	if (type.flags & ts.TypeFlags.Object) {
+		const objectType = type as ts.ObjectType;
 
-		switch (arrayTypeNode.elementType.kind) {
-			case ts.SyntaxKind.StringKeyword:
-				return new StringArrayProperty(name);
-
-			case ts.SyntaxKind.NumberKeyword:
-				return new NumberArrayProperty(name);
+		if (objectType.objectFlags & ts.ObjectFlags.Interface) {
+			const property = new ObjectProperty(name);
+			property.setProperties(getProperties(type, typechecker));
+			return property;
 		}
 	}
 
@@ -120,17 +130,9 @@ function findTypeDeclaration(symbol: ts.Symbol): ts.Declaration | undefined {
 		return symbol.declarations[0];
 	}
 
-	// const internalSymbol = symbol as {
-	// 	type?: ts.Type;
-	// };
-
-	// if (!(internalSymbol.type && internalSymbol.type.symbol)) {
-	// 	return;
-	// }
-
-	// if (internalSymbol.type.symbol) {
-	// 	return findTypeDeclaration(internalSymbol.type.symbol);
-	// }
+	if (symbol.type && symbol.type.symbol) {
+		return findTypeDeclaration(symbol.type.symbol);
+	}
 
 	return;
 }
