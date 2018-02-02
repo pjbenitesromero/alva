@@ -79,14 +79,34 @@ export class PageElement {
 	 * @return A new page element object containing the loaded data.
 	 */
 	public static fromJsonObject(
-		json: JsonObject,
+		json: JsonObject | undefined,
 		store: Store,
 		parent?: PageElement
 	): PageElement | undefined {
-		const patternId = PatternIdentifier.parse(json['pattern'] as string);
-
-		if (!patternId) {
+		if (!json) {
 			return;
+		}
+
+		let patternId = PatternIdentifier.parse(json['pattern'] as string);
+
+		// If pattern id could not be parsed it probably means that the id is from an old id schema.
+		// Try to convert the old id to a valid one
+		if (!patternId) {
+			const oldPatternId = json['pattern'] as string;
+
+			if (oldPatternId === 'text') {
+				patternId = new PatternIdentifier({
+					styleguideId: 'synthetic',
+					analyzerId: 'synthetic',
+					patternId: 'text'
+				});
+			} else {
+				patternId = new PatternIdentifier({
+					styleguideId: 'default',
+					analyzerId: 'react',
+					patternId: `lib/patterns/${oldPatternId}/index`
+				});
+			}
 		}
 
 		const styleguide = store.getStyleguide(patternId.styleguideId);

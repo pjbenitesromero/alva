@@ -35,8 +35,6 @@ export class TypescriptReactAnalyzer extends StyleguideAnalyzer<ReactPattern> {
 			});
 		});
 
-		console.log(patterns);
-
 		return patterns;
 	}
 }
