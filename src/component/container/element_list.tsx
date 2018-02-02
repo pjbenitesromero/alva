@@ -6,6 +6,7 @@ import { observer } from 'mobx-react';
 import { Page } from '../../store/page/page';
 import { PageElement } from '../../store/page/page-element';
 import { Pattern } from '../../store/pattern/pattern';
+import { PatternIdentifier } from '../../store/pattern/pattern-identifier';
 import { PropertyValue } from '../../store/page/property-value';
 import * as React from 'react';
 import { Store } from '../../store/store';
@@ -23,7 +24,12 @@ export class ElementList extends React.Component<ElementListProps> {
 	public render(): JSX.Element | null {
 		const page: Page | undefined = this.props.store.getCurrentPage();
 		if (page) {
-			const rootElement: PageElement = page.getRoot();
+			const rootElement = page.getRoot();
+
+			if (!rootElement) {
+				return null;
+			}
+
 			const selectedElement = this.props.store.getSelectedElement();
 
 			return this.renderList(this.createItemFromElement('Root', rootElement, selectedElement));
@@ -102,17 +108,23 @@ export class ElementList extends React.Component<ElementListProps> {
 				this.props.store.setRearrangeElement(element);
 			},
 			handleDragDropForChild: (e: React.DragEvent<HTMLElement>) => {
-				const styleguide = this.props.store.getStyleguide();
+				const patternIdData = e.dataTransfer.getData('globalPatternId');
+				const patternId = PatternIdentifier.parse(patternIdData);
 
-				if (!styleguide) {
-					return;
-				}
-
-				const transferPatternPath = e.dataTransfer.getData('globalPatternId');
 				const parentElement = element.getParent();
-				const pageElement = transferPatternPath
-					? new PageElement(styleguide.findPattern(transferPatternPath), true)
-					: this.props.store.getRearrangeElement();
+				let pageElement: PageElement | undefined;
+
+				if (!patternId) {
+					pageElement = this.props.store.getRearrangeElement();
+				} else {
+					const styleguide = this.props.store.getStyleguide(patternId.styleguideId);
+
+					if (!styleguide) {
+						return;
+					}
+
+					pageElement = new PageElement(styleguide.findPattern(patternId.globalId), true);
+				}
 
 				if (!parentElement || !pageElement || pageElement.isAncestorOf(parentElement)) {
 					return;
@@ -122,16 +134,22 @@ export class ElementList extends React.Component<ElementListProps> {
 				this.props.store.setSelectedElement(pageElement);
 			},
 			handleDragDrop: (e: React.DragEvent<HTMLElement>) => {
-				const styleguide = this.props.store.getStyleguide();
+				const patternIdData = e.dataTransfer.getData('globalPatternId');
+				const patternId = PatternIdentifier.parse(patternIdData);
 
-				if (!styleguide) {
-					return;
+				let pageElement: PageElement | undefined;
+
+				if (!patternId) {
+					pageElement = this.props.store.getRearrangeElement();
+				} else {
+					const styleguide = this.props.store.getStyleguide(patternId.styleguideId);
+
+					if (!styleguide) {
+						return;
+					}
+
+					pageElement = new PageElement(styleguide.findPattern(patternId.globalId), true);
 				}
-
-				const transferPatternPath = e.dataTransfer.getData('globalPatternId');
-				const pageElement = transferPatternPath
-					? new PageElement(styleguide.findPattern(transferPatternPath), true)
-					: this.props.store.getRearrangeElement();
 
 				if (!pageElement || pageElement.isAncestorOf(element)) {
 					return;

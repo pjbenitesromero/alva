@@ -4,6 +4,7 @@ import { PageElement } from '../../store/page/page-element';
 import { PropertyValue } from '../../store/page/property-value';
 import * as React from 'react';
 import { ReactPattern } from '../../store/styleguide/typescript-react-analyzer/react-pattern';
+import { SyntheticPattern } from '../../store/styleguide/synthetic-analyzer/synthetic-pattern';
 
 class PatternWrapper extends React.Component<{}, PatternWrapperState> {
 	public constructor(props: {}) {
@@ -68,7 +69,16 @@ export class Preview extends React.Component<PreviewProps> {
 				return null;
 			}
 
-			const pattern: ReactPattern = pageElement.getPattern() as ReactPattern;
+			const pattern: ReactPattern | SyntheticPattern = pageElement.getPattern() as
+				| ReactPattern
+				| SyntheticPattern;
+
+			if (pattern.id.analyzerId === 'synthetic') {
+				switch (pattern.id.patternId) {
+					case 'text':
+						return pageElement.getPropertyValue('text');
+				}
+			}
 
 			// tslint:disable-next-line:no-any
 			const componentProps: any = {};

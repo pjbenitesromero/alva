@@ -51,7 +51,12 @@ export class PatternListContainer extends React.Component<PatternListContainerPr
 	}
 
 	public render(): JSX.Element {
-		this.items = this.createItemsFromStyleguide(this.props.store.getStyleguide() as Styleguide);
+		this.items = [];
+
+		this.props.store.getStyleguides().forEach(styleguide => {
+			this.items = this.items.concat(this.createItemsFromStyleguide(styleguide));
+		});
+
 		if (this.props.store.getPatternSearchTerm() !== '') {
 			this.items = this.search(this.items, this.props.store.getPatternSearchTerm());
 		}

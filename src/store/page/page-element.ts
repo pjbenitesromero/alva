@@ -1,6 +1,7 @@
 import { JsonArray, JsonObject, JsonValue } from '../json';
 import * as MobX from 'mobx';
 import { Pattern } from '../pattern/pattern';
+import { PatternIdentifier } from '../pattern/pattern-identifier';
 import { Property } from '../pattern/property/property';
 import { PropertyValue } from './property-value';
 import { ReactPattern } from '../styleguide/typescript-react-analyzer/react-pattern';
@@ -82,19 +83,24 @@ export class PageElement {
 		store: Store,
 		parent?: PageElement
 	): PageElement | undefined {
-		const styleguide = store.getStyleguide();
+		const patternId = PatternIdentifier.parse(json['pattern'] as string);
+
+		if (!patternId) {
+			return;
+		}
+
+		const styleguide = store.getStyleguide(patternId.styleguideId);
 
 		if (!styleguide) {
 			return;
 		}
 
-		const patternId: string = json['pattern'] as string;
-		const pattern: Pattern | undefined = styleguide.findPattern(patternId);
+		const pattern: Pattern | undefined = styleguide.findPattern(patternId.globalId);
 		const element = new PageElement(pattern, false, parent);
 
 		if (!pattern) {
 			console.warn(`Ignoring unknown pattern "${patternId}"`);
-			element.patternPath = patternId;
+			element.patternPath = patternId.globalId;
 			return element;
 		}
 
@@ -159,11 +165,11 @@ export class PageElement {
 	 * @return The new child element.
 	 */
 	protected createChildElement(json: JsonValue, store: Store): PageElement | PropertyValue {
-		const styleguide = store.getStyleguide() as Styleguide;
-
 		if (json && (json as JsonObject)['_type'] === 'pattern') {
 			return PageElement.fromJsonObject(json as JsonObject, store, this);
 		} else {
+			const styleguide = store.getStyleguide('synthetic') as Styleguide;
+
 			const element: PageElement = new PageElement(styleguide.findPattern('text'), false, this);
 			element.setPropertyValue('text', String(json));
 			return element;

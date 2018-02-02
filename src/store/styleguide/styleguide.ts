@@ -5,7 +5,7 @@ import { TypescriptReactAnalyzer } from './typescript-react-analyzer';
 const DEFAULT_ANALYZERS = [new TypescriptReactAnalyzer()];
 
 export class Styleguide {
-	private readonly analyzers: StyleguideAnalyzer[];
+	protected readonly analyzers: StyleguideAnalyzer[];
 	public readonly id: string;
 	public readonly path: string;
 	public patterns: Pattern[] = [];

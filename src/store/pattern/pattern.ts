@@ -1,7 +1,5 @@
 import { PatternIdentifier } from './pattern-identifier';
 import { Property } from './property/property';
-import { Styleguide } from '../styleguide/styleguide';
-import { StyleguideAnalyzer } from '../styleguide/styleguide-analyzer';
 
 /**
  * A pattern represents a reusable, styled component (e.g. a React component) of the styleguide.
@@ -13,8 +11,6 @@ import { StyleguideAnalyzer } from '../styleguide/styleguide-analyzer';
  * e.g. Patternplate.
  */
 export abstract class Pattern {
-	public readonly styleguide: Styleguide;
-	public readonly analyzer?: StyleguideAnalyzer;
 	/**
 	 * The ID of the pattern (also the folder name within the parent folder).
 	 */
@@ -41,17 +37,14 @@ export abstract class Pattern {
 	 */
 	public abstract readonly valid: boolean;
 
-	public constructor(styleguide: Styleguide, analyzer?: StyleguideAnalyzer) {
-		this.styleguide = styleguide;
-		this.analyzer = analyzer;
-	}
-
 	/**
 	 * Returns a property this pattern supports, by its ID.
 	 * @param id The ID of the property.
 	 * @return The property for the given ID, if it exists.
 	 */
-	public abstract getProperty(id: string): Property | undefined;
+	public getProperty(id: string): Property | undefined {
+		return this.properties.get(id);
+	}
 
 	/**
 	 * Returns a string representation of this pattern.

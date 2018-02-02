@@ -10,6 +10,7 @@ import { Pattern } from './pattern/pattern';
 import { Preferences } from './preferences';
 import { Project } from './project//project';
 import { Styleguide } from './styleguide/styleguide';
+import { SyntheticStyleguide } from './styleguide/synthetic-styleguide';
 
 /**
  * The central entry-point for all application state, managed by MobX.
@@ -52,7 +53,7 @@ export class Store {
 	/**
 	 * The root folder of the patterns of the currently opened styleguide.
 	 */
-	@MobX.observable private styleguide: Styleguide;
+	@MobX.observable private styleguides: Map<string, Styleguide> = new Map();
 
 	/**
 	 * The internal data storage for preferences, i.e. personal settings
@@ -209,8 +210,15 @@ export class Store {
 	 * Returns the root folder of the patterns of the currently opened styleguide.
 	 * @return The root folder object.
 	 */
-	public getStyleguide(): Styleguide | undefined {
-		return this.styleguide;
+	public getStyleguides(): Map<string, Styleguide> {
+		return this.styleguides;
+	}
+
+	/**
+	 * Returns the specified styleguide by id.
+	 */
+	public getStyleguide(styleguideId: string): Styleguide | undefined {
+		return this.styleguides.get(styleguideId);
 	}
 
 	/**
@@ -315,8 +323,14 @@ export class Store {
 			}
 			this.styleGuidePath = styleguidePath;
 			this.currentPage = undefined;
-			this.styleguide = new Styleguide('default', styleguidePath);
-			this.styleguide.load();
+
+			const defaultStyleguide = new Styleguide('default', styleguidePath);
+			const syntheticStyleguide = new SyntheticStyleguide();
+
+			this.styleguides.set(defaultStyleguide.id, defaultStyleguide);
+			this.styleguides.set(syntheticStyleguide.id, syntheticStyleguide);
+
+			this.styleguides.forEach(styleguide => styleguide.load());
 
 			(this.projects as IObservableArray<Project>).clear();
 			const projectsPath = PathUtils.join(this.getPagesPath(), 'projects.yaml');
@@ -442,7 +456,13 @@ export class Store {
 	 * @return All patterns that match.
 	 */
 	public searchPatterns(term: string): Pattern[] {
-		return this.styleguide ? this.styleguide.searchPatterns(term) : [];
+		let patterns: Pattern[] = [];
+
+		this.styleguides.forEach(styleguide => {
+			patterns = patterns.concat(styleguide.searchPatterns(term));
+		});
+
+		return patterns;
 	}
 
 	/**

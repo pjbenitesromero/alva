@@ -19,6 +19,10 @@ export class PatternIdentifier implements PatternIdentifierData {
 		this.patternId = init.patternId;
 		this.styleguideId = init.styleguideId;
 	}
+
+	public static parse(id: string): PatternIdentifier | undefined {
+		return parseIdentifier(id);
+	}
 }
 
 export function parseIdentifier(id: string): PatternIdentifier | undefined {

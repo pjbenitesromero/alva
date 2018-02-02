@@ -19,17 +19,15 @@ export interface PatternInit {
 }
 
 export class ReactPattern extends Pattern {
+	public readonly styleguide: Styleguide;
+	public readonly analyzer: TypescriptReactAnalyzer;
 	public readonly iconPath?: string | undefined;
-	private readonly _properties: Map<string, Property>;
+	public readonly properties: Map<string, Property>;
 	public readonly valid: boolean;
 	public readonly name: string;
 	public readonly id: PatternIdentifier;
 	public readonly fileInfo: PatternFileInfo;
 	public readonly exportInfo: ReactComponentExport;
-
-	public get properties(): Map<string, Property> {
-		return this._properties;
-	}
 
 	public get isConstructable(): boolean {
 		return this.exportInfo.exportType.isConstructable;
@@ -41,14 +39,17 @@ export class ReactPattern extends Pattern {
 		fileInfo: PatternFileInfo,
 		exportInfo: ReactComponentExport
 	) {
-		super(styleguide, analyzer);
+		super();
+
+		this.styleguide = styleguide;
+		this.analyzer = analyzer;
 
 		this.fileInfo = fileInfo;
 		this.exportInfo = exportInfo;
 
 		this.id = this.createIdentifier();
 		this.name = this.getName();
-		this._properties = this.generateProperties();
+		this.properties = this.generateProperties();
 	}
 
 	public getProperty(id: string): Property | undefined {
@@ -62,7 +63,7 @@ export class ReactPattern extends Pattern {
 	}
 
 	private createIdentifier(): PatternIdentifier {
-		const analyzer: TypescriptReactAnalyzer = this.analyzer as TypescriptReactAnalyzer;
+		const analyzer: TypescriptReactAnalyzer = this.analyzer;
 
 		const baseName = PathUtils.basename(this.fileInfo.jsFilePath, '.js');
 		const relativeDirectoryPath = PathUtils.relative(
