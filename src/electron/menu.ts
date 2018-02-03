@@ -1,11 +1,4 @@
-import {
-	BrowserWindow,
-	ipcRenderer,
-	MenuItem,
-	MenuItemConstructorOptions,
-	remote,
-	WebContents
-} from 'electron';
+import { BrowserWindow, ipcRenderer, MenuItem, MenuItemConstructorOptions, remote } from 'electron';
 import * as FileExtraUtils from 'fs-extra';
 import { PageElement } from '../store/page/page-element';
 import * as PathUtils from 'path';
@@ -243,9 +236,9 @@ export function createMenu(store: Store): void {
 							return 'Ctrl+Shift+I';
 						}
 					})(),
-					click: (item: MenuItem, focusedWindow: WebContents) => {
+					click: (item: MenuItem, focusedWindow: BrowserWindow) => {
 						if (focusedWindow) {
-							focusedWindow.toggleDevTools();
+							focusedWindow.webContents.toggleDevTools();
 						}
 					}
 				}
